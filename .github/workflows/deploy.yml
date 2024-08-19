@@ -1,3 +1,5 @@
+# Deployment config to deploy to AWS EC2 instance
+
 name: Deploy to AWS EC2
 
 on:
@@ -55,6 +57,14 @@ jobs:
         scp -o StrictHostKeyChecking=no -i private_key deploy-compose.yml ${EC2_USER}@${EC2_HOST}:~/deploy-compose.yml
         scp -o StrictHostKeyChecking=no -i private_key .env ${EC2_USER}@${EC2_HOST}:~/.env
         ssh -o StrictHostKeyChecking=no -i private_key ${EC2_USER}@${EC2_HOST} << EOF
+          # Update Docker
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+
+          # Install latest docker-compose
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
           export ECR_REGISTRY=${ECR_REGISTRY}
           export ECR_REPOSITORY=${ECR_REPOSITORY}
           export GITHUB_SHA=${GITHUB_SHA}
