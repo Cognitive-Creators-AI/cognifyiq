@@ -242,6 +242,8 @@ const requestPasswordReset = async (req) => {
     expiresIn: 900,
   });
 
+  // Send email
+
   const link = `${domains.client}/reset-password?token=${resetToken}&userId=${user._id}`;
 
   if (emailEnabled) {
