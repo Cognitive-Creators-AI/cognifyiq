@@ -56,6 +56,8 @@ jobs:
         echo "$ENV_PRODUCTION" > .env
         scp -o StrictHostKeyChecking=no -i private_key deploy-compose.yml ${EC2_USER}@${EC2_HOST}:~/deploy-compose.yml
         scp -o StrictHostKeyChecking=no -i private_key .env ${EC2_USER}@${EC2_HOST}:~/.env
+        scp -o StrictHostKeyChecking=no -i private_key librechat.yaml ${EC2_USER}@${EC2_HOST}:~/librechat.yaml
+
         ssh -o StrictHostKeyChecking=no -i private_key ${EC2_USER}@${EC2_HOST} << EOF
           # Update Docker
           sudo apt-get update
