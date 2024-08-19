@@ -1,4 +1,4 @@
-# Deployment config to deploy to AWS EC2 instance
+# Deployment config to deploy CognitiveIQ to AWS EC2 instance
 
 name: Deploy to AWS EC2
 
