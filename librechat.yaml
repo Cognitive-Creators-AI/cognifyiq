@@ -34,7 +34,7 @@ endpoints:
           ]
         fetch: false
       titleConvo: true
-      titleModel: "mixtral-8x7b-32768"
+      titleModel: "llama-3.1-70b-versatile"
       modelDisplayLabel: "groq"
 
 
