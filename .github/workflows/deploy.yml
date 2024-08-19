@@ -8,7 +8,7 @@ env:
   AWS_REGION: ap-southeast-2
   ECR_REGISTRY: 058264298011.dkr.ecr.ap-southeast-2.amazonaws.com
   ECR_REPOSITORY: cognitive-creators
-  EC2_HOST: 13.210.172.73
+  EC2_HOST: 13.54.20.201
   EC2_USER: ubuntu
 
 jobs:
@@ -68,6 +68,6 @@ jobs:
           echo "$SSL_CERT" > ~/ssl/fullchain.pem
           echo "$SSL_KEY" > ~/ssl/privkey.pem
           
-          docker-compose pull
-          docker-compose up -d
+          docker-compose -f deploy-compose.yml pull
+          docker-compose -f deploy-compose.yml up -d
         EOF
