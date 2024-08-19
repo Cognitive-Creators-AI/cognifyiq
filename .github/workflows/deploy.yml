@@ -51,7 +51,9 @@ jobs:
         SSL_KEY: ${{ secrets.SSL_KEY }}
       run: |
         echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+        echo "$ENV_PRODUCTION" > .env
         scp -o StrictHostKeyChecking=no -i private_key deploy-compose.yml ${EC2_USER}@${EC2_HOST}:~/deploy-compose.yml
+        scp -o StrictHostKeyChecking=no -i private_key .env ${EC2_USER}@${EC2_HOST}:~/.env
         ssh -o StrictHostKeyChecking=no -i private_key ${EC2_USER}@${EC2_HOST} << EOF
           export ECR_REGISTRY=${ECR_REGISTRY}
           export ECR_REPOSITORY=${ECR_REPOSITORY}
@@ -59,14 +61,6 @@ jobs:
           export POSTGRES_DB=${POSTGRES_DB}
           export POSTGRES_USER=${POSTGRES_USER}
           export POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-          
-          # Create .env file from GitHub secret
-          echo "$ENV_PRODUCTION" > ~/.env
-          
-          # Append POSTGRES secrets to .env file
-          echo "POSTGRES_DB=${POSTGRES_DB}" >> ~/.env
-          echo "POSTGRES_USER=${POSTGRES_USER}" >> ~/.env
-          echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> ~/.env
           
           # Create SSL directory if it doesn't exist
           mkdir -p ~/ssl
