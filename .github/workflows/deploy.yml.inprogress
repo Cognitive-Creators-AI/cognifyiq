@@ -52,7 +52,7 @@ jobs:
         SSL_KEY: ${{ secrets.SSL_KEY }}
       run: |
         echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-        scp -o StrictHostKeyChecking=no -i private_key docker-compose.yml ${EC2_USER}@${EC2_HOST}:~/docker-compose.yml
+        scp -o StrictHostKeyChecking=no -i private_key deploy-compose.yml ${EC2_USER}@${EC2_HOST}:~/deploy-compose.yml
         ssh -o StrictHostKeyChecking=no -i private_key ${EC2_USER}@${EC2_HOST} << EOF
           export ECR_REGISTRY=${ECR_REGISTRY}
           export ECR_REPOSITORY=${ECR_REPOSITORY}
