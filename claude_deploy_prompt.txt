@@ -1,0 +1,9 @@
+Please refer to the attached docker files for the LibreChat app.  Can you please update the docker files to build the client and api services from local code and deploy to the cognitive-creators Amazon ECR, and create a .github/workflows.deploy.yml to deploy to my AWS EC2 instance. Please get the AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,EC2_SSH_PRIVATE_KEY,POSTGRES_DB,POSTGRES_PASSWORD,POSTGRES_USER values from github secrets and inset them in the deploy-compose.yml in the relevant places.  And create a deploy-compose.override.yml for local deployment that enables me to set the secret variable values for local deployment and testing. I.e. the secret variable valules will not be available unless run as part of the github workflow.  Also make the necessary updates nginx.conf and any relevant deployment files to use https in the deployed nginx service.  The domain associated with this app is cognitiveiq.ai
+
+Here are the Amazon EC2 and ECR instance details.
+
+  AWS_REGION: ap-southeast-2
+  ECR_REGISTRY: 058264298011.dkr.ecr.ap-southeast-2.amazonaws.com
+  ECR_REPOSITORY: cognitive-creators
+  EC2_HOST: 13.210.172.73
+  EC2_USER: ubuntu
