@@ -43,6 +43,7 @@ jobs:
     - name: Deploy to EC2
       env:
         PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        ENV_PRODUCTION: ${{ secrets.ENV_PRODUCTION }}
         POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
         POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -58,6 +59,14 @@ jobs:
           export POSTGRES_DB=${POSTGRES_DB}
           export POSTGRES_USER=${POSTGRES_USER}
           export POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          
+          # Create .env file from GitHub secret
+          echo "$ENV_PRODUCTION" > ~/.env
+          
+          # Append POSTGRES secrets to .env file
+          echo "POSTGRES_DB=${POSTGRES_DB}" >> ~/.env
+          echo "POSTGRES_USER=${POSTGRES_USER}" >> ~/.env
+          echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> ~/.env
           
           # Create SSL directory if it doesn't exist
           mkdir -p ~/ssl
