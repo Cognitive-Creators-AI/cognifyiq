@@ -53,6 +53,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         ME_CONFIG_BASICAUTH_USERNAME: ${{ secrets.ME_CONFIG_BASICAUTH_USERNAME }}
         ME_CONFIG_BASICAUTH_PASSWORD: ${{ secrets.ME_CONFIG_BASICAUTH_PASSWORD }}
+        IMAGE_TAG: ${{ github.sha }}
       run: |
         echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
         echo "$ENV_PRODUCTION" > .env
@@ -80,6 +81,7 @@ jobs:
           export ECR_REGISTRY=${ECR_REGISTRY}
           export ECR_REPOSITORY=${ECR_REPOSITORY}
           export GITHUB_SHA=${GITHUB_SHA}
+          export IMAGE_TAG=${IMAGE_TAG}
           export POSTGRES_DB=${POSTGRES_DB}
           export POSTGRES_USER=${POSTGRES_USER}
           export POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
