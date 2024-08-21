@@ -16,7 +16,7 @@ interface:
 # registration:
 #  socialLogins: ["github", "google", "openid"]
 
-# Example Registration Object Structure
+# Example Registration Object Structure.
 registration:
   allowedDomains:
     - "cognitivecreators.ai"
