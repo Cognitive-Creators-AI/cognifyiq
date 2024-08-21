@@ -1,86 +1,38 @@
-#  CognitiveIQ AWS EC2 Deployment Config
-
-name: Deploy to AWS EC2
+name: Deploy_GHRunner_Linux_ACI
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 env:
-  AWS_REGION: ap-southeast-2
-  ECR_REGISTRY: 058264298011.dkr.ecr.ap-southeast-2.amazonaws.com
-  ECR_REPOSITORY: cognitive-creators
-  EC2_HOST: 13.54.20.201
-  EC2_USER: ubuntu
+  RUNNER_VERSION: 2.293.0
+  ACI_RESOURCE_GROUP: 'Demo-ACI-GitHub-Runners-RG'
+  ACI_NAME: 'gh-runner-linux-01'
+  DNS_NAME_LABEL: 'gh-lin-01'
+  GH_OWNER: ${{ github.repository_owner }}
+  GH_REPOSITORY: 'LibreChat' #Change here to deploy self hosted runner ACI to another repo.
 
 jobs:
-  deploy:
+  deploy-gh-runner-aci:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      # checkout the repo
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v4
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: 'Login via Azure CLI'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-
-    - name: Build, tag, and push images to Amazon ECR
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:api-$IMAGE_TAG -f Dockerfile.multi --target api-build .
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:client-$IMAGE_TAG -f Dockerfile.multi --target client-stage .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:api-$IMAGE_TAG
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:client-$IMAGE_TAG
-
-    - name: Deploy to EC2
-      env:
-        PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        ENV_PRODUCTION: ${{ secrets.ENV_PRODUCTION }}
-        POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        SSL_CERT: ${{ secrets.SSL_CERT }}
-        SSL_KEY: ${{ secrets.SSL_KEY }}
-      run: |
-        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-        echo "$ENV_PRODUCTION" > .env
-        scp -o StrictHostKeyChecking=no -i private_key deploy-compose.yml ${EC2_USER}@${EC2_HOST}:~/deploy-compose.yml
-        scp -o StrictHostKeyChecking=no -i private_key .env ${EC2_USER}@${EC2_HOST}:~/.env
-        scp -o StrictHostKeyChecking=no -i private_key librechat.yaml ${EC2_USER}@${EC2_HOST}:~/librechat.yaml
-
-        ssh -o StrictHostKeyChecking=no -i private_key ${EC2_USER}@${EC2_HOST} << EOF
-          # Update Docker
-          sudo apt-get update
-          sudo apt-get install -y docker.io
-
-          # Install latest docker-compose
-          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-
-          export ECR_REGISTRY=${ECR_REGISTRY}
-          export ECR_REPOSITORY=${ECR_REPOSITORY}
-          export GITHUB_SHA=${GITHUB_SHA}
-          export POSTGRES_DB=${POSTGRES_DB}
-          export POSTGRES_USER=${POSTGRES_USER}
-          export POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-          
-          # Create SSL directory if it doesn't exist
-          mkdir -p ~/ssl
-          
-          # Save SSL certificate and key
-          echo "$SSL_CERT" > ~/ssl/fullchain.pem
-          echo "$SSL_KEY" > ~/ssl/privkey.pem
-          
-          docker-compose -f deploy-compose.yml pull
-          docker-compose -f deploy-compose.yml up -d
-        EOF
+      - name: 'Deploy to Azure Container Instances'
+        uses: 'azure/aci-deploy@v1'
+        with:
+          resource-group: ${{ env.ACI_RESOURCE_GROUP }}
+          image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/pwd9000-github-runner-lin:${{ env.RUNNER_VERSION }}
+          registry-login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          name: ${{ env.ACI_NAME }}
+          dns-name-label: ${{ env.DNS_NAME_LABEL }}
+          environment-variables: GH_TOKEN=${{ secrets.PAT_TOKEN }} GH_OWNER=${{ env.GH_OWNER }} GH_REPOSITORY=${{ env.GH_REPOSITORY }}
+          location: 'eastus'

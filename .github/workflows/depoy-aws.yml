@@ -1,0 +1,98 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: ap-southeast-2
+  ECR_REGISTRY: 058264298011.dkr.ecr.ap-southeast-2.amazonaws.com
+  ECR_REPOSITORY: cognitive-creators
+  EC2_HOST: 13.54.20.201
+  EC2_USER: ubuntu
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push images to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:api-$IMAGE_TAG -f Dockerfile.multi --target api-build .
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:client-$IMAGE_TAG -f Dockerfile.multi --target client-stage .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:api-$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:client-$IMAGE_TAG
+
+    - name: Deploy to EC2
+      env:
+        PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        ENV_PRODUCTION: ${{ secrets.ENV_PRODUCTION }}
+        POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        SSL_CERT: ${{ secrets.SSL_CERT }}
+        SSL_KEY: ${{ secrets.SSL_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        ME_CONFIG_BASICAUTH_USERNAME: ${{ secrets.ME_CONFIG_BASICAUTH_USERNAME }}
+        ME_CONFIG_BASICAUTH_PASSWORD: ${{ secrets.ME_CONFIG_BASICAUTH_PASSWORD }}
+      run: |
+        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+        echo "$ENV_PRODUCTION" > .env
+        scp -o StrictHostKeyChecking=no -i private_key deploy-compose-aws.yml ${EC2_USER}@${EC2_HOST}:~/deploy-compose-aws.yml
+        scp -o StrictHostKeyChecking=no -i private_key .env ${EC2_USER}@${EC2_HOST}:~/.env
+        scp -o StrictHostKeyChecking=no -i private_key librechat.yaml ${EC2_USER}@${EC2_HOST}:~/librechat.yaml
+
+        ssh -o StrictHostKeyChecking=no -i private_key ${EC2_USER}@${EC2_HOST} << EOF
+          # Update Docker
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+
+          # Install latest docker-compose
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+          # Configure AWS CLI
+          aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+          aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+          aws configure set default.region ${AWS_REGION}
+
+          # Login to ECR
+          aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+          export ECR_REGISTRY=${ECR_REGISTRY}
+          export ECR_REPOSITORY=${ECR_REPOSITORY}
+          export GITHUB_SHA=${GITHUB_SHA}
+          export POSTGRES_DB=${POSTGRES_DB}
+          export POSTGRES_USER=${POSTGRES_USER}
+          export POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          export ME_CONFIG_BASICAUTH_USERNAME=${ME_CONFIG_BASICAUTH_USERNAME}
+          export ME_CONFIG_BASICAUTH_PASSWORD=${ME_CONFIG_BASICAUTH_PASSWORD}
+          
+          # Create SSL directory if it doesn't exist
+          mkdir -p ~/ssl
+          
+          # Save SSL certificate and key
+          echo "$SSL_CERT" > ~/ssl/fullchain.pem
+          echo "$SSL_KEY" > ~/ssl/privkey.pem
+          
+          docker-compose -f deploy-compose-aws.yml pull
+          docker-compose -f deploy-compose-aws.yml up -d
+        EOF
