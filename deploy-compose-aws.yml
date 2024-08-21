@@ -2,7 +2,7 @@ version: "3.8"
 services:
   api:
     image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:api-${GITHUB_SHA}
-    container_name: LibreChat-API
+    container_name: cognitiveiq-api
     ports:
       - 3080:3080
     depends_on:
@@ -16,7 +16,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
-      - MONGO_URI=mongodb://mongodb:27017/LibreChat
+      - MONGO_URI=mongodb://mongodb:27017/cognitiveiq
       - MEILI_HOST=http://meilisearch:7700
       - RAG_PORT=${RAG_PORT:-8000}
       - RAG_API_URL=http://rag_api:${RAG_PORT:-8000}
@@ -27,7 +27,7 @@ services:
 
   client:
     image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:client-${GITHUB_SHA}
-    container_name: LibreChat-NGINX
+    container_name: cognitiveiq-nginx
     ports:
       - 80:80
       - 443:443
@@ -39,7 +39,7 @@ services:
       - ~/ssl:/etc/nginx/ssl:ro
 
   mongodb:
-    container_name: chat-mongodb
+    container_name: cognitiveiq-mongodb
     image: mongo
     restart: always
     volumes:
@@ -60,7 +60,7 @@ services:
     restart: always
 
   meilisearch:
-    container_name: chat-meilisearch
+    container_name: cognitiveiq-meilisearch
     image: getmeili/meilisearch:v1.7.3
     restart: always
     env_file:
