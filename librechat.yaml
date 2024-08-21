@@ -16,6 +16,12 @@ interface:
 # registration:
 #  socialLogins: ["github", "google", "openid"]
 
+# Example Registration Object Structure
+registration:
+  allowedDomains:
+    - "cognitivecreators.ai"
+    - "nhir.org"
+
 endpoints:
   custom:
     # groq
@@ -24,11 +30,6 @@ endpoints:
       baseURL: "https://api.groq.com/openai/v1/"
       models:
         default: [
-          "llama2-70b-4096",
-          "llama3-70b-8192",
-          "llama3-8b-8192",
-          "mixtral-8x7b-32768",
-          "gemma-7b-it",
           "llama-3.1-70b-versatile",
           "llama-3.1-8b-instant",
           ]
@@ -44,20 +45,21 @@ endpoints:
       baseURL: "https://api.perplexity.ai/"
       models:
         default: [
-          "mistral-7b-instruct",
-          "sonar-small-chat",
-          "sonar-small-online",
-          "sonar-medium-chat",
-          "sonar-medium-online"
+          "llama-3.1-sonar-small-128k-online",
+          "llama-3.1-sonar-large-128k-online",
+          "llama-3.1-sonar-huge-128k-online",
+          "llama-3.1-sonar-small-128k-chat",
+          "llama-3.1-sonar-large-128k-chat",
+          "llama-3.1-8b-instruct",
+          "llama-3.1-70b-instruct",  
           ]
         fetch: false # fetching list of models is not supported
       titleConvo: true
-      titleModel: "sonar-medium-chat"
+      titleModel: "llama-3.1-sonar-large-128k-online"
       summarize: false
-      summaryModel: "sonar-medium-chat"
+      summaryModel: "llama-3.1-sonar-large-128k-chat"
       forcePrompt: false
       dropParams: ["stop", "frequency_penalty"]
       modelDisplayLabel: "Perplexity"
-
 
     
